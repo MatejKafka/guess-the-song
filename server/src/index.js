@@ -1,6 +1,7 @@
 const WebSocket = require("ws")
 
 const CONFIG = require("../../config/config.json")
+const PORT = process.env.PORT || CONFIG.devServer.port
 const RECEIVER_SIGNATURE = CONFIG.messages.receiverSignature
 const SENDER_SIGNATURE = CONFIG.messages.senderSignature
 const MANAGER_SIGNATURE = CONFIG.messages.managerSignature
@@ -47,8 +48,9 @@ const broadcastSong = (audioTrack) => {
 
 
 // noinspection JSCheckFunctionSignatures
-const wss = new WebSocket.Server({port: CONFIG.server.port})
-console.log("server running at port", CONFIG.server.port)
+const wss = new WebSocket.Server({port: PORT}, () => {
+	console.log("server running at port", PORT)
+})
 
 const receivers = new Set()
 // null signifies no pending playback is waiting
