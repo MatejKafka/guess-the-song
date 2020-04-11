@@ -1,7 +1,7 @@
 {
 	"server": {
-		"host": "anagmate-guess.azurewebsites.net",
-		"port": 8080
+		"host": "localhost",
+		"port": 12000
 	},
 	"messages": {
 		"receiverSignature": "sig:receiver",
