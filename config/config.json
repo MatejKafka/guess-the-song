@@ -1,0 +1,17 @@
+{
+	"server": {
+		"host": "anagmate-guess.azurewebsites.net",
+		"port": 8080
+	},
+	"messages": {
+		"receiverSignature": "sig:receiver",
+		"senderSignature": "sig:sender",
+		"managerSignature": "sig:manager",
+
+		"songReceived": "msg:song received",
+		"restartServer": "msg:restart",
+		"triggerPlayback": "msg:trigger playback",
+		"requestConfirmation": "msg:confirm",
+		"requestError": "msg:error"
+	}
+}
