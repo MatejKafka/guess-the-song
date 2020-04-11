@@ -11,14 +11,14 @@ from .manager import __main__ as run_manager
 async def _run_client():
 	init_sigint_handler("Quitting...")
 
-	while True:
-		mode = input("Select mode (1=receiver, 2=sender): ")
-		if mode.strip() in ("1", "2", "3"): break
-		print("Invalid input, try again...")
-
 	server_url = input("Enter server URL: ")
 	print(f"Connecting to a server... ({server_url})")
 	async with websockets.connect(server_url) as ws:
+		while True:
+			mode = input("Select mode (1=receiver, 2=sender): ")
+			if mode.strip() in ("1", "2", "3"): break
+			print("Invalid input, try again...")
+
 		if mode == "1":
 			print("Starting a receiver...")
 			await run_receiver(ws)

@@ -13,6 +13,7 @@ pyinstaller `
     --distpath "./_build/guess" `
     --workpath "./_build/build" `
     --add-data "../bin/ffplay.exe;." `
+    --add-data "../bin/ffmpeg.exe;." `
     --add-data "../../config/config.json;." `
     --noconfirm `
     ./launcher.py
