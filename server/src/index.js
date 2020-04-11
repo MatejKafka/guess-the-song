@@ -1,6 +1,6 @@
 const WebSocket = require("ws")
 
-const CONFIG = require("../../config/config.json")
+const CONFIG = require("../config.json")
 const PORT = process.env.PORT || CONFIG.devServer.port
 const RECEIVER_SIGNATURE = CONFIG.messages.receiverSignature
 const SENDER_SIGNATURE = CONFIG.messages.senderSignature
