@@ -1,4 +1,3 @@
-import asyncio
 import typing
 import pathlib
 import csv
@@ -7,7 +6,7 @@ import enum
 import websockets
 
 from src.lib.ff import get_cropped_segment
-from ..CONFIG import SERVER_HOST, SERVER_PORT, MESSAGES
+from ..CONFIG import MESSAGES
 
 CSV_NAME = "songs.csv"
 
@@ -123,26 +122,14 @@ async def _run_player(songs: typing.List[SongSegment], ws: websockets.WebSocketC
 			print("Confirmation received")
 
 
-async def _run_sender():
-	server_url = "ws://" + SERVER_HOST + ":" + str(SERVER_PORT)
-	print(f"Connecting to a server... ({server_url})")
+async def __main__(ws: websockets.WebSocketClientProtocol):
+	await ws.send(MESSAGES["senderSignature"])
+	print("Connected")
+	print("")
+	songs = _get_songs()
+	print("")
 
-	async with websockets.connect(server_url) as ws:
-		await ws.send(MESSAGES["senderSignature"])
-		print("Connected")
-		print("")
-		songs = _get_songs()
-		print("")
+	if len(songs) == 0:
+		raise Exception("Song list is empty")
 
-		if len(songs) == 0:
-			raise Exception("Song list is empty")
-
-		await _run_player(songs, ws)
-
-
-def __main__():
-	asyncio.get_event_loop().run_until_complete(_run_sender())
-
-
-if __name__ == "__main__":
-	__main__()
+	await _run_player(songs, ws)
