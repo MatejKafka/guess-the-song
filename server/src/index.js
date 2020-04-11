@@ -1,10 +1,14 @@
 const WebSocket = require("ws")
 
 const CONFIG = require("../../config/config.json")
-const PORT = process.env.PORT || CONFIG.devServer.port
 const RECEIVER_SIGNATURE = CONFIG.messages.receiverSignature
 const SENDER_SIGNATURE = CONFIG.messages.senderSignature
 const MANAGER_SIGNATURE = CONFIG.messages.managerSignature
+
+if (process.env.PORT == null) {
+	throw new Error("Server requires the PORT environment variable to be defined")
+}
+const PORT = process.env.PORT
 
 
 const handleHandshake = (ws, message) => {

@@ -1,12 +1,4 @@
 {
-	"devServer": {
-		"host": "localhost",
-		"port": 12000
-	},
-	"prodServer": {
-		"host": "<TODO>",
-		"port": 80
-	},
 	"messages": {
 		"receiverSignature": "sig:receiver",
 		"senderSignature": "sig:sender",

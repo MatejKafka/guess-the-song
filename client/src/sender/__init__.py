@@ -58,28 +58,34 @@ def print_player_controls():
 	print("    n/next -> skip to next song")
 	print("    p/prev/previous -> return to previous song")
 	print("    q/quit -> quit the program")
-	print("")
 
 
 @enum.unique
 class UserPlayerInput(enum.Enum):
 	NEXT = enum.auto()
 	PREVIOUS = enum.auto()
+	DURATION = enum.auto()
+	START_TIME = enum.auto()
 
 
-def _get_user_input() -> typing.Union[UserPlayerInput, float]:
+def _get_user_input() -> typing.Tuple[UserPlayerInput, typing.Optional[float]]:
 	user_input = input("Input: ").lower()
 	if user_input in ["n", "next"]:
-		return UserPlayerInput.NEXT
+		return UserPlayerInput.NEXT, None
 	if user_input in ["p", "prev", "previous"]:
-		return UserPlayerInput.PREVIOUS
+		return UserPlayerInput.PREVIOUS, None
 	if user_input in ["q", "quit"]:
 		print("")
 		print("Quitting...")
 		print("")
 		exit(0)
+	if user_input.startswith("s ") or user_input.startswith("start "):
+		_, user_input = user_input.split()
+		ret = UserPlayerInput.START_TIME
+	else:
+		ret = UserPlayerInput.DURATION
 	try:
-		return float(user_input)
+		return ret, float(user_input)
 	except ValueError:
 		print("Incorrect input, try again")
 		print_player_controls()
@@ -92,34 +98,44 @@ async def _run_player(songs: typing.List[SongSegment], ws: websockets.WebSocketC
 	song_i = 0
 	while True:
 		song = songs[song_i]
+		print("")
 		print("Selected song:")
 		print("    file name:", song.name)
 		print("    start time:", song.start_time, "s")
 		print("    comment:", song.comment)
 
 		while True:
-			user_input = _get_user_input()
-			if isinstance(user_input, UserPlayerInput):
-				if user_input == UserPlayerInput.PREVIOUS:
-					if song_i > 0:
-						song_i -= 1
-					else:
-						print("Already at the first song, cannot go to previous")
-				else:  # NEXT
-					if song_i < len(songs) - 1:
-						song_i += 1
-					else:
-						print("Reached the end of song list")
-				break
+			itype, user_input = _get_user_input()
 
-			# user entered a duration
-			print("Cropping the song sample...")
-			track = song.get_audio_track(user_input)
-			print("Sending the sample...")
-			await ws.send(track)
-			print("Sample sent")
-			await ws.recv()
-			print("Confirmation received")
+			if itype == UserPlayerInput.PREVIOUS:
+				if song_i > 0:
+					song_i -= 1
+					print(f"Changed to song #{song_i+1} of {len(songs)}")
+					break
+				else:
+					print("Already at the first song, cannot go to previous")
+			elif itype == UserPlayerInput.NEXT:
+				if song_i < len(songs) - 1:
+					song_i += 1
+					print(f"Changed to song #{song_i+1} of {len(songs)}")
+					break
+				else:
+					print("Reached the end of song list")
+			elif itype == UserPlayerInput.START_TIME:
+				# tuples are immutable, have to copy
+				# noinspection PyProtectedMember
+				song = song._replace(start_time=user_input)
+				print("Changed playback start time to", user_input, "(will be reset when changing song)")
+			elif itype == UserPlayerInput.DURATION:
+				print("Cropping the song sample...")
+				track = song.get_audio_track(user_input)
+				print("Sending the sample...")
+				await ws.send(track)
+				print("Sample sent")
+				await ws.recv()
+				print("Confirmation received")
+			else:
+				raise Exception("Unhandled input type: " + str(itype))
 
 
 async def __main__(ws: websockets.WebSocketClientProtocol):

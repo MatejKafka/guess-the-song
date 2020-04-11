@@ -1,7 +1,12 @@
+$env:PORT = 12000
+
 $ErrorActionPreference = "Stop"
 
 Write-Output "Starting ngrok..."
-$job = Start-Job {.\bin\ngrok.exe http 12000}
+$job = Start-Job -ArgumentList $env:PORT {
+	param($port)
+	.\bin\ngrok.exe http $port
+}
 
 try {
 	Write-Host "Waiting for ngrok connection..." -NoNewLine
