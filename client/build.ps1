@@ -1,8 +1,12 @@
 $ErrorActionPreference = "Stop"
 
 if ($null -eq $env:VIRTUAL_ENV) {
-    Write-Error "This script must be run inside an active python venv!"
-    exit 1
+    Write-Output "Activating venv..."
+    & .\venv\Scripts\Activate.ps1
+    Write-Output "Venv activated"
+    $deactivateVenv = $true
+} else {
+    $deactivateVenv = $false
 }
 
 # --add-data paths are relative to spec file
@@ -34,3 +38,10 @@ Copy-Item -Force ./LICENSE.txt ./_build/guess/
 Set-Location _build
 Compress-Archive -Force ./guess ./guess.zip
 Set-Location ..
+
+
+# FIXME: not very robust - when error occurs, venv will stay active
+if ($deactivateVenv) {
+    deactivate
+    Write-Output "Venv deactivated"
+}
