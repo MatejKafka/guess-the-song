@@ -54,9 +54,10 @@ def _get_songs() -> typing.List[SongSegment]:
 
 def print_player_controls():
 	print("Playback control:")
-	print("    decimal number -> play n seconds of song")
+	print("    <decimal_number> -> play n seconds of song")
 	print("    n/next -> skip to next song")
 	print("    p/prev/previous -> return to previous song")
+	print("    s/start <decimal_number> -> change playback start time")
 	print("    q/quit -> quit the program")
 
 
