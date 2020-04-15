@@ -1,17 +1,17 @@
-import typing
+from typing import NamedTuple, Optional, Awaitable, List, Tuple, Callable, NoReturn
 import pathlib
 import csv
 import enum
 
 import websockets
 
-from src.lib.ff import get_cropped_segment
+from src.lib.ff import get_cropped_segment, play_segment
 from ..CONFIG import MESSAGES
 
 CSV_NAME = "songs.csv"
 
 
-class SongSegment(typing.NamedTuple):
+class SongSegment(NamedTuple):
 	name: str
 	path: pathlib.Path
 	start_time: float
@@ -21,7 +21,7 @@ class SongSegment(typing.NamedTuple):
 		return get_cropped_segment(self.path, self.start_time, duration)
 
 
-def _parse_song_csv(folder_path) -> typing.List[SongSegment]:
+def _parse_song_csv(folder_path) -> List[SongSegment]:
 	folder_path: pathlib.Path = pathlib.Path(folder_path).resolve()
 	with (folder_path / CSV_NAME).open('r') as fd:
 		songs = []
@@ -31,7 +31,7 @@ def _parse_song_csv(folder_path) -> typing.List[SongSegment]:
 	return songs
 
 
-def _get_songs() -> typing.List[SongSegment]:
+def _get_songs() -> List[SongSegment]:
 	print("Enter path to the song folder (e.g. D:/guessing_game/Mates).")
 	print("The folder must contain a file called songs.csv (see the ./example folder),")
 	print("with one or more lines in the format `file_name, playback_start_time, comment`")
@@ -69,7 +69,7 @@ class UserPlayerInput(enum.Enum):
 	START_TIME = enum.auto()
 
 
-def _get_user_input() -> typing.Tuple[UserPlayerInput, typing.Optional[float]]:
+def _get_user_input() -> Tuple[UserPlayerInput, Optional[float]]:
 	user_input = input("Input: ").lower()
 	if user_input in ["n", "next"]:
 		return UserPlayerInput.NEXT, None
@@ -93,8 +93,7 @@ def _get_user_input() -> typing.Tuple[UserPlayerInput, typing.Optional[float]]:
 		return _get_user_input()
 
 
-async def _run_player(songs: typing.List[SongSegment],
-			sample_cb: typing.Callable[[bytes], typing.Awaitable[None]]):
+async def _run_player(songs: List[SongSegment], sample_cb: Callable[[bytes], Awaitable[None]]):
 	print_player_controls()
 
 	song_i = 0
@@ -131,26 +130,40 @@ async def _run_player(songs: typing.List[SongSegment],
 			elif itype == UserPlayerInput.DURATION:
 				print("Cropping the song sample...")
 				track = song.get_audio_track(user_input)
-				print("Sending the sample...")
 				await sample_cb(track)
 			else:
 				raise Exception("Unhandled input type: " + str(itype))
 
 
-async def __main__(ws: websockets.WebSocketClientProtocol):
-	await ws.send(MESSAGES["senderSignature"])
-	print("Connected")
-	print("")
+async def __main__(ws: Optional[websockets.WebSocketClientProtocol]) -> NoReturn:
+	"""
+	:param ws: If param is None, offline mode will be used,
+		otherwise will use provided connection for online mode.
+	"""
+
+	if ws is None:
+		# offline mode
+		async def play_sample(track: bytes):
+			print("Playing sample")
+			play_segment(track)
+			print("Sample played")
+	else:
+		# online mode
+		await ws.send(MESSAGES["senderSignature"])
+		print("Connected")
+		print("")
+
+		async def play_sample(track: bytes):
+			print("Sending the sample...")
+			await ws.send(track)
+			print("Sample sent")
+			await ws.recv()
+			print("Confirmation received")
+
 	songs = _get_songs()
 	print("")
 
 	if len(songs) == 0:
 		raise Exception("Song list is empty")
-
-	async def play_sample(track: bytes):
-		await ws.send(track)
-		print("Sample sent")
-		await ws.recv()
-		print("Confirmation received")
 
 	await _run_player(songs, play_sample)

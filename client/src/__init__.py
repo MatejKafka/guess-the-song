@@ -11,22 +11,27 @@ from .manager import __main__ as run_manager
 async def _run_client():
 	init_sigint_handler("Quitting...")
 
+	while True:
+		mode = input("Select mode (1=offline, 2=receiver, 3=sender, 4=debug): ")
+		mode = mode.strip()
+		if mode in ("1", "2", "3", "4"): break
+		print("Invalid input, try again...")
+
+	if mode == "1":
+		print("Starting in offline mode...")
+		return await run_sender(None)
+
 	server_url = input("Enter server URL: ")
 	print(f"Connecting to a server... ({server_url})")
 	async with websockets.connect(server_url) as ws:
-		while True:
-			mode = input("Select mode (1=receiver, 2=sender): ")
-			if mode.strip() in ("1", "2", "3"): break
-			print("Invalid input, try again...")
-
-		if mode == "1":
+		if mode == "2":
 			print("Starting a receiver...")
 			await run_receiver(ws)
-		elif mode == "2":
+		elif mode == "3":
 			print("Starting a sender...")
 			await run_sender(ws)
 		else:
-			print("Starting a manager...")
+			print("Starting a debug manager...")
 			await run_manager(ws)
 
 
