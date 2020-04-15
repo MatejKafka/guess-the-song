@@ -1,3 +1,5 @@
+import sys
+
 import websockets
 
 from src.CONFIG import MESSAGES
@@ -14,7 +16,7 @@ async def __main__(ws: websockets.WebSocketClientProtocol):
 			print("Sent restart request")
 			print("Received response:", await ws.recv())
 			print("Exiting...")
-			exit(0)
+			sys.exit(0)
 		elif user_input == "force":
 			await ws.send(MESSAGES["triggerPlayback"])
 			print("Force playback request sent")

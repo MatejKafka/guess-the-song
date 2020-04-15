@@ -1,3 +1,4 @@
+import sys
 from typing import NamedTuple, Optional, Awaitable, List, Tuple, Callable, NoReturn
 import pathlib
 import csv
@@ -79,7 +80,7 @@ def _get_user_input() -> Tuple[UserPlayerInput, Optional[float]]:
 		print("")
 		print("Quitting...")
 		print("")
-		exit(0)
+		sys.exit(0)
 	if user_input.startswith("s ") or user_input.startswith("start "):
 		_, user_input = user_input.split()
 		ret = UserPlayerInput.START_TIME
