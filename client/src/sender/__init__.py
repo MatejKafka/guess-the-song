@@ -145,7 +145,7 @@ async def __main__(ws: Optional[websockets.WebSocketClientProtocol]) -> NoReturn
 	if ws is None:
 		# offline mode
 		async def play_sample(track: bytes):
-			print("Playing sample")
+			print(f"Playing sample (size: {len(track)} bytes)")
 			play_segment(track)
 			print("Sample played")
 	else:
@@ -155,7 +155,7 @@ async def __main__(ws: Optional[websockets.WebSocketClientProtocol]) -> NoReturn
 		print("")
 
 		async def play_sample(track: bytes):
-			print("Sending the sample...")
+			print(f"Sending the sample... (size: {len(track)} bytes)")
 			await ws.send(track)
 			print("Sample sent")
 			await ws.recv()

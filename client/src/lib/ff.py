@@ -22,7 +22,7 @@ def play_segment(player_input: Union[Path, bytes], start_time: float = None, dur
 		path or bytes object containing a valid audio file.
 	"""
 	# noinspection SpellCheckingInspection
-	ffplay_args = ["-nostats", "-nodisp", "-autoexit", "-hide_banner"]
+	ffplay_args = ["-nostats", "-nodisp", "-autoexit", "-hide_banner", "-f", "mp3"]
 
 	if start_time is not None: ffplay_args += ["-ss", '%0.2f' % start_time]
 	if duration is not None: ffplay_args += ["-t", '%0.2f' % duration]
@@ -46,7 +46,7 @@ def get_cropped_segment(file_path: Path, start_time: float = None, duration: flo
 
 	# -vn = disable video (if present)
 	# noinspection SpellCheckingInspection
-	_FFMPEG_ARGS = ["-map_metadata", "-1", "-vn", "-acodec", "copy", "-hide_banner", "-loglevel", "panic", "-f", "mp3"]
+	_FFMPEG_ARGS = ["-map_metadata", "-1", "-vn", "-hide_banner", "-loglevel", "error", "-f", "mp3"]
 
 	start_time_arg = ["-ss", '%0.2f' % start_time] if start_time is not None else []
 	duration_arg = ["-t", '%0.2f' % duration] if duration is not None else []
