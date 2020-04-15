@@ -93,7 +93,8 @@ def _get_user_input() -> typing.Tuple[UserPlayerInput, typing.Optional[float]]:
 		return _get_user_input()
 
 
-async def _run_player(songs: typing.List[SongSegment], ws: websockets.WebSocketClientProtocol):
+async def _run_player(songs: typing.List[SongSegment],
+			sample_cb: typing.Callable[[bytes], typing.Awaitable[None]]):
 	print_player_controls()
 
 	song_i = 0
@@ -131,10 +132,7 @@ async def _run_player(songs: typing.List[SongSegment], ws: websockets.WebSocketC
 				print("Cropping the song sample...")
 				track = song.get_audio_track(user_input)
 				print("Sending the sample...")
-				await ws.send(track)
-				print("Sample sent")
-				await ws.recv()
-				print("Confirmation received")
+				await sample_cb(track)
 			else:
 				raise Exception("Unhandled input type: " + str(itype))
 
@@ -149,4 +147,10 @@ async def __main__(ws: websockets.WebSocketClientProtocol):
 	if len(songs) == 0:
 		raise Exception("Song list is empty")
 
-	await _run_player(songs, ws)
+	async def play_sample(track: bytes):
+		await ws.send(track)
+		print("Sample sent")
+		await ws.recv()
+		print("Confirmation received")
+
+	await _run_player(songs, play_sample)
