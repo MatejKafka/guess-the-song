@@ -15,7 +15,7 @@ async def __main__(ws: websockets.WebSocketClientProtocol):
 		print("Waiting for a song...")
 		audio_track: bytes = await ws.recv()
 		if type(audio_track) is not bytes:
-			raise Exception("Expected to receive a song, received text data instead...")
+			raise Exception(f"Expected to receive a song, received text data instead... (msg: {audio_track})")
 
 		print("Song received, waiting for everyone else...")
 		await ws.send(MESSAGES["songReceived"])
