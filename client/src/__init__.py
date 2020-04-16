@@ -23,7 +23,9 @@ async def _run_client():
 
 	server_url = input("Enter server URL: ")
 	print(f"Connecting to a server... ({server_url})")
-	async with websockets.connect(server_url) as ws:
+	# disable max limit on message size to allow sending large songs
+	# noinspection PyTypeChecker
+	async with websockets.connect(server_url, max_size=None) as ws:
 		if mode == "2":
 			print("Starting a receiver...")
 			await run_receiver(ws)
