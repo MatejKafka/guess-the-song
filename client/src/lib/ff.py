@@ -1,11 +1,16 @@
 import subprocess
-import sys
 from pathlib import Path
 from typing import List, Union
+
 from .pyinstaller_util import find_executable
 
 _FFPLAY_CMD = find_executable("ffplay")
 _FFMPEG_CMD = find_executable("ffmpeg")
+
+
+class CmdException(Exception):
+	def __init__(self, msg: str, stderr: bytes):
+		super().__init__(msg + "\n" + stderr.decode("utf8"))
 
 
 def _run_cmd(args: List, stdin_input: bytes = None, capture_stdout=False) -> subprocess.CompletedProcess:
@@ -13,7 +18,7 @@ def _run_cmd(args: List, stdin_input: bytes = None, capture_stdout=False) -> sub
 	return subprocess.run(["cmd", "/c"] + args,
 		input=stdin_input,
 		stdout=subprocess.PIPE if capture_stdout else None,
-		stderr=sys.stderr)
+		stderr=subprocess.PIPE)
 
 
 def play_segment(player_input: Union[Path, bytes], start_time: float = None, duration: float = None):
@@ -35,7 +40,7 @@ def play_segment(player_input: Union[Path, bytes], start_time: float = None, dur
 		stdin_input=input_bytes)
 
 	if result.returncode != 0:
-		raise Exception("Could not play segment - ffplay return exit code " + str(result.returncode))
+		raise CmdException("Could not play segment - ffplay return exit code " + str(result.returncode), result.stderr)
 
 
 def get_cropped_segment(file_path: Path, start_time: float = None, duration: float = None) -> bytes:
@@ -56,5 +61,5 @@ def get_cropped_segment(file_path: Path, start_time: float = None, duration: flo
 		capture_stdout=True)
 
 	if result.returncode != 0:
-		raise Exception("Could not crop segment - ffmpeg returned exit code " + str(result.returncode))
+		raise CmdException("Could not crop segment - ffmpeg returned exit code " + str(result.returncode), result.stderr)
 	return result.stdout

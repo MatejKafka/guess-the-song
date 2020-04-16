@@ -12,6 +12,11 @@ from ..CONFIG import MESSAGES
 CSV_NAME = "songs.csv"
 
 
+class PresentableException(Exception):
+	def __init__(self, msg: str):
+		super().__init__(msg)
+
+
 class SongSegment(NamedTuple):
 	name: str
 	path: pathlib.Path
@@ -24,11 +29,26 @@ class SongSegment(NamedTuple):
 
 def _parse_song_csv(folder_path) -> List[SongSegment]:
 	folder_path: pathlib.Path = pathlib.Path(folder_path).resolve()
-	with (folder_path / CSV_NAME).open('r') as fd:
+
+	if not folder_path.exists():
+		raise PresentableException(f"Given folder does not exist ({folder_path})")
+
+	try:
+		fd = (folder_path / CSV_NAME).open('r')
+	except FileNotFoundError as err:
+		raise PresentableException(f"Given folder does not contain songs.csv ({folder_path / CSV_NAME})") from err
+	except IOError as err:
+		raise PresentableException(f"Could not read songs.csv ({folder_path / CSV_NAME})") from err
+
+	with fd:
 		songs = []
 		for row in csv.reader(fd, skipinitialspace=True):
 			(filename, start_time, comment) = row
+			file_path = folder_path / filename
+			if not file_path.exists():
+				raise PresentableException(f"File from songs.csv does not exist ({folder_path / filename})")
 			songs.append(SongSegment(filename, folder_path / filename, float(start_time), comment))
+
 	return songs
 
 
@@ -46,11 +66,12 @@ def _get_songs() -> List[SongSegment]:
 			songs = _parse_song_csv(folder_path)
 			print(f"Song list successfully loaded ({len(songs)} songs)")
 			return songs
-		except FileNotFoundError:
-			print("Entered folder does not contain songs.csv file, please try again")
+		except PresentableException as err:
+			print(str(err))
 		except ValueError:
 			print("songs.csv file exists, but it is incorrectly formatted")
 			print("Please fix the file and enter the folder path again")
+		print("")
 
 
 def print_player_controls():
