@@ -5,15 +5,17 @@ from typing import Union, Iterable, AsyncIterable, Optional
 
 import websockets
 
+# noinspection SpellCheckingInspection
+_PROTOCOL_SIGNATURE = b"gues"
+_TOKEN_SIZE = 4
+_RESP_LEN = len(_PROTOCOL_SIGNATURE) + _TOKEN_SIZE
+
 
 # TODO: implement server counterpart and actually use this
 class ServerConnection:
 	_WS = websockets.WebSocketClientProtocol
 	Data = websockets.Data
 	SendData = Union[Data, Iterable[Data], AsyncIterable[Data]]
-
-	# noinspection SpellCheckingInspection
-	_PROTOCOL_SIGNATURE = b"guessthesong"
 
 	connection_id: bytes
 
@@ -27,7 +29,7 @@ class ServerConnection:
 
 	def __init__(self, server_url: str):
 		self._server_url = server_url
-		self._conn_id = secrets.token_bytes(4)
+		self._conn_id = secrets.token_bytes(_TOKEN_SIZE)
 		self._conn: Optional[ServerConnection._WS] = None
 
 	async def _connect(self):
@@ -35,16 +37,16 @@ class ServerConnection:
 			# disable max limit on message size to allow sending large songs
 			# noinspection PyTypeChecker
 			self._conn = await websockets.connect(self._server_url, max_size=None)
-			await self._conn.send(ServerConnection._PROTOCOL_SIGNATURE + self._conn_id)
+			await self._conn.send(_PROTOCOL_SIGNATURE + self._conn_id)
 			response = await self._conn.recv()
 		except websockets.WebSocketException as err:
 			raise ConnectionError("Error occurred while initializing server connection") from err
 
 		if type(response) != bytes:
 			raise ConnectionError("Server handshake should be binary, received text instead")
-		if len(response) != 8 or response[0:4] != ServerConnection._PROTOCOL_SIGNATURE:
+		if len(response) != _RESP_LEN or response[0:len(_PROTOCOL_SIGNATURE)] != _PROTOCOL_SIGNATURE:
 			raise ConnectionError("Invalid server handshake response: " + response.decode("utf8", errors="ignore"))
-		if response[4:8] != self._conn_id:
+		if response[len(_PROTOCOL_SIGNATURE):] != self._conn_id:
 			raise ConnectionError("Connection ID returned from server does not match sent client ID")
 
 	async def _reconnect_wrapper(self, fn):
@@ -59,15 +61,16 @@ class ServerConnection:
 				await self._connect()
 				print("Reconnected")
 
-
 	async def send(self, data: SendData):
 		async def fn():
 			await self._conn.send(data)
+
 		await self._reconnect_wrapper(fn)
 
 	async def recv(self):
 		async def fn():
 			await self._conn.recv()
+
 		await self._reconnect_wrapper(fn)
 
 	async def close(self):
