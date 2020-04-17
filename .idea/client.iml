@@ -8,6 +8,7 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/client">
+      <sourceFolder url="file://$MODULE_DIR$/client/venv/Lib/site-packages" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/client/_build" />
       <excludeFolder url="file://$MODULE_DIR$/client/venv" />
     </content>

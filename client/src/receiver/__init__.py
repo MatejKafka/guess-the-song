@@ -29,6 +29,6 @@ async def __main__(ws: websockets.WebSocketClientProtocol):
 		time.sleep(1)
 		print("")
 		print("Playing song...")
-		play_segment(audio_track)
+		await play_segment(audio_track)
 		print("Playback finished")
 		print("")

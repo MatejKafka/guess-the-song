@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 from pathlib import Path
 from typing import List, Union
@@ -8,20 +9,20 @@ _FFPLAY_CMD = find_executable("ffplay")
 _FFMPEG_CMD = find_executable("ffmpeg")
 
 
-class CmdException(Exception):
-	def __init__(self, msg: str, stderr: bytes):
-		super().__init__(msg + "\n" + stderr.decode("utf8"))
-
-
-def _run_cmd(args: List, stdin_input: bytes = None, capture_stdout=False) -> subprocess.CompletedProcess:
+async def _run_cmd(args: List, stdin_input: bytes = None, capture_stdout=False) -> subprocess.CompletedProcess:
 	args = [str(arg) for arg in args]
-	return subprocess.run(["cmd", "/c"] + args,
+	loop = asyncio.get_running_loop()
+
+	return await loop.run_in_executor(None, lambda: subprocess.run(
+		["cmd", "/c"] + args,
 		input=stdin_input,
 		stdout=subprocess.PIPE if capture_stdout else None,
-		stderr=subprocess.PIPE)
+		stderr=subprocess.PIPE,
+		check=True # if exit code is non-zero, raise exception
+	))
 
 
-def play_segment(player_input: Union[Path, bytes], start_time: float = None, duration: float = None):
+async def play_segment(player_input: Union[Path, bytes], start_time: float = None, duration: float = None):
 	"""
 	Plays segment of `player_input` from `start_time`. Input can be provided either as file
 		path or bytes object containing a valid audio file.
@@ -36,14 +37,11 @@ def play_segment(player_input: Union[Path, bytes], start_time: float = None, dur
 		player_input = "-"  # ffplay will read from stdin
 	else:
 		input_bytes = None
-	result = _run_cmd([_FFPLAY_CMD, *ffplay_args, str(player_input)],
+	await _run_cmd([_FFPLAY_CMD, *ffplay_args, str(player_input)],
 		stdin_input=input_bytes)
 
-	if result.returncode != 0:
-		raise CmdException("Could not play segment - ffplay return exit code " + str(result.returncode), result.stderr)
 
-
-def get_cropped_segment(file_path: Path, start_time: float = None, duration: float = None) -> bytes:
+async def get_cropped_segment(file_path: Path, start_time: float = None, duration: float = None) -> bytes:
 	"""
 	Read input file from `file_path`, crop audio from `start_time`, `duration`
 		seconds long and return output as bytes.
@@ -57,9 +55,8 @@ def get_cropped_segment(file_path: Path, start_time: float = None, duration: flo
 	duration_arg = ["-t", '%0.2f' % duration] if duration is not None else []
 	# -i <input> must be before some of the options in _FFMPEG_ARGS
 	# "-" for output to stdout
-	result = _run_cmd([_FFMPEG_CMD, "-i", str(file_path), *_FFMPEG_ARGS, *start_time_arg, *duration_arg, "-"],
+	result = await _run_cmd(
+		[_FFMPEG_CMD, "-i", str(file_path), *_FFMPEG_ARGS,
+			*start_time_arg, *duration_arg, "-"],
 		capture_stdout=True)
-
-	if result.returncode != 0:
-		raise CmdException("Could not crop segment - ffmpeg returned exit code " + str(result.returncode), result.stderr)
 	return result.stdout

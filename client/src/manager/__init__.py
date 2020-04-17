@@ -1,8 +1,7 @@
-import sys
-
 import websockets
 
 from src.CONFIG import MESSAGES
+from src.lib.ainput import ainput
 
 
 async def __main__(ws: websockets.WebSocketClientProtocol):
@@ -10,13 +9,12 @@ async def __main__(ws: websockets.WebSocketClientProtocol):
 	print("Connected")
 
 	while True:
-		user_input = input("Enter command (restart, force): ").lower()
+		user_input = (await ainput("Enter command (restart, force): ")).lower()
 		if user_input == "restart":
 			await ws.send(MESSAGES["restartServer"])
 			print("Sent restart request")
 			print("Received response:", await ws.recv())
-			print("Exiting...")
-			sys.exit(0)
+			return
 		elif user_input == "force":
 			await ws.send(MESSAGES["triggerPlayback"])
 			print("Force playback request sent")
