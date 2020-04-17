@@ -14,6 +14,36 @@ from .sender import __main__ as run_sender
 from .manager import __main__ as run_manager
 
 
+async def _run_online(mode: str):
+	server_url = await ainput("Enter server URL: ")
+
+	if not server_url.startswith("wss://") and not server_url.startswith("ws://"):
+		if server_url.startswith("localhost"):
+			server_url = "ws://" + server_url
+		else:
+			server_url = "wss://" + server_url
+		print("URL corrected to " + server_url)
+
+	print("Connecting...")
+
+	try:
+		# disable max limit on message size to allow sending large songs
+		# noinspection PyTypeChecker
+		async with websockets.connect(server_url, max_size=None) as ws:
+			if mode == "2":
+				print("Starting a receiver...")
+				await run_receiver(ws)
+			elif mode == "3":
+				print("Starting a sender...")
+				await run_sender(ws)
+			else:
+				print("Starting a debug manager...")
+				await run_manager(ws)
+	except websockets.InvalidURI:
+		print("The URL you entered is not valid, please try again")
+		await _run_online(mode)
+
+
 async def _run_client():
 	init_sigint_handler("Quitting...")
 
@@ -27,20 +57,7 @@ async def _run_client():
 		print("Starting in offline mode...")
 		await run_sender(None)
 	else:
-		server_url = await ainput("Enter server URL: ")
-		print(f"Connecting to a server... ({server_url})")
-		# disable max limit on message size to allow sending large songs
-		# noinspection PyTypeChecker
-		async with websockets.connect(server_url, max_size=None) as ws:
-			if mode == "2":
-				print("Starting a receiver...")
-				await run_receiver(ws)
-			elif mode == "3":
-				print("Starting a sender...")
-				await run_sender(ws)
-			else:
-				print("Starting a debug manager...")
-				await run_manager(ws)
+		await _run_online(mode)
 
 	print("")
 	print("Quitting...")

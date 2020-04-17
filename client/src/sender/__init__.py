@@ -1,13 +1,13 @@
-from typing import NamedTuple, Optional, Awaitable, List, Tuple, Callable, NoReturn
+from typing import NamedTuple, Optional, Awaitable, List, Callable, NoReturn
 import pathlib
 import csv
-import enum
 
 import websockets
 
 from src.lib.ainput import ainput
 from src.lib.ff import get_cropped_segment, play_segment
 from src.CONFIG import MESSAGES
+from .input_parser import Input, print_player_controls, get_user_input
 
 CSV_NAME = "songs.csv"
 
@@ -25,16 +25,6 @@ class SongSegment(NamedTuple):
 
 	def get_audio_track(self, duration):
 		return get_cropped_segment(self.path, self.start_time, duration)
-
-
-@enum.unique
-class UserPlayerInput(enum.Enum):
-	QUIT = enum.auto()
-	RELOAD = enum.auto()
-	NEXT = enum.auto()
-	PREVIOUS = enum.auto()
-	DURATION = enum.auto()
-	START_TIME = enum.auto()
 
 
 class Player:
@@ -111,49 +101,13 @@ class Player:
 			print("Please fix the issue and enter the folder path again")
 			print("")
 
-	@staticmethod
-	def print_player_controls():
-		print("Playback control:")
-		print("    <decimal_number> -> play n seconds of song")
-		print("    n/next -> skip to next song")
-		print("    p/prev/previous -> return to previous song")
-		print("    s/start <decimal_number> -> change playback start time")
-		print("    q/quit -> quit the program")
-		print("    r/reload -> reload current song list")
-		print("")
-
-	@staticmethod
-	async def _get_user_input() -> Tuple[UserPlayerInput, Optional[float]]:
-		print("")
-		user_input = (await ainput("Input: ")).lower()
-		if user_input in ["n", "next"]:
-			return UserPlayerInput.NEXT, None
-		if user_input in ["p", "prev", "previous"]:
-			return UserPlayerInput.PREVIOUS, None
-		if user_input in ["q", "quit"]:
-			return UserPlayerInput.QUIT, None
-		if user_input in ["r", "reload"]:
-			return UserPlayerInput.RELOAD, None
-		if user_input.startswith("s ") or user_input.startswith("start "):
-			_, user_input = user_input.split()
-			ret = UserPlayerInput.START_TIME
-		else:
-			ret = UserPlayerInput.DURATION
-		try:
-			return ret, float(user_input)
-		except ValueError:
-			print("Incorrect input, try again")
-			Player.print_player_controls()
-			return await Player._get_user_input()
-
-
 	async def _run_player(self):
 		"""
 		If true is returned, restart the player with reloaded song list.
 		Otherwise exit.
 		"""
 
-		self.print_player_controls()
+		print_player_controls()
 
 		song_i = 0
 		while True:
@@ -164,39 +118,60 @@ class Player:
 			print("    comment:", song.comment)
 
 			while True:
-				itype, user_input = await self._get_user_input()
+				itype, args = await get_user_input()
 
-				if itype == UserPlayerInput.QUIT:
+				if len(args) == 0:
+					arg = None
+				else:
+					arg = args[0]
+
+				if itype == Input.QUIT:
 					return
-				elif itype == UserPlayerInput.RELOAD:
+
+				elif itype == Input.RELOAD:
 					await self._get_songs()
 					if song_i >= len(self.songs):
 						print("Song list length changed, selected first song")
 						song_i = 0
 					break
-				elif itype == UserPlayerInput.PREVIOUS:
+
+				elif itype == Input.PREVIOUS:
 					if song_i > 0:
 						song_i -= 1
 						print(f"Changed to song #{song_i+1} of {len(self.songs)}")
 						break
 					else:
 						print("Already at the first song, cannot go to previous")
-				elif itype == UserPlayerInput.NEXT:
+
+				elif itype == Input.NEXT:
 					if song_i < len(self.songs) - 1:
 						song_i += 1
 						print(f"Changed to song #{song_i+1} of {len(self.songs)}")
 						break
 					else:
 						print("Reached the end of song list")
-				elif itype == UserPlayerInput.START_TIME:
+
+				elif itype == Input.START_TIME:
 					# tuples are immutable, have to copy
 					# noinspection PyProtectedMember
-					song = song._replace(start_time=user_input)
-					print("Changed playback start time to", user_input, "(will be reset when changing song)")
-				elif itype == UserPlayerInput.DURATION:
+					song = song._replace(start_time=arg)
+					print("Changed playback start time to", arg, "(will be reset when changing song)")
+
+				elif itype == Input.SET_SONG:
+					# user will type in human offsets
+					arg -= 1
+					if arg < 0 or arg >= len(self.songs):
+						print(f"Cannot select given song, there are only {len(self.songs)} songs loaded")
+						continue
+					song_i = arg
+					print(f"Changed to song #{song_i+1} of {len(self.songs)}")
+					break
+
+				elif itype == Input.DURATION:
 					print("Cropping the song sample...")
-					track = await song.get_audio_track(user_input)
+					track = await song.get_audio_track(arg)
 					await self.sample_cb(track)
+
 				else:
 					raise Exception("Unhandled input type: " + str(itype))
 
@@ -218,7 +193,6 @@ async def __main__(ws: Optional[websockets.WebSocketClientProtocol]) -> NoReturn
 		# online mode
 		await ws.send(MESSAGES["senderSignature"])
 		print("Connected")
-		print("")
 
 		async def play_sample(track: bytes):
 			print(f"Sending the sample... (size: {len(track)} bytes)")
