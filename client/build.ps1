@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
 
 if ($null -eq $env:VIRTUAL_ENV) {
     Write-Output "Activating venv..."

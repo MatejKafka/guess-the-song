@@ -1,0 +1,14 @@
+console_ui: false  # don't show interactive console UI
+inspect_db_size: -1  # disable package capture
+region: eu
+web_addr: false  # disable web interface
+
+log_format: json
+log: stdout
+
+tunnels:    
+    server:
+        proto: http
+        addr: 12000
+        inspect: false
+        bind_tls: true
