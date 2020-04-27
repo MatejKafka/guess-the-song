@@ -34,7 +34,7 @@ if (Test-Path "./_build/guess/example/") {
     Remove-Item ./_build/guess/example/ -Recurse
 }
 Copy-Item -Force -Recurse ./example ./_build/guess/example
-Copy-Item -Force ./LICENSE.txt ./_build/guess/
+Copy-Item -Force ../LICENSE.txt ./_build/guess/
 
 Set-Location _build
 Compress-Archive -Force ./guess ./guess.zip
