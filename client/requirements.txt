@@ -3,4 +3,4 @@ future==0.18.2
 pefile==2019.4.18
 PyInstaller==3.6
 pywin32-ctypes==0.2.0
-websockets==8.1
+websockets==9.1
