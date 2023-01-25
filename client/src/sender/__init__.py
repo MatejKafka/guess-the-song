@@ -8,6 +8,7 @@ from src.lib.ainput import ainput
 from src.lib.ff import get_cropped_segment, play_segment
 from src.CONFIG import MESSAGES
 from .input_parser import Input, print_player_controls, get_user_input
+from .get_src_folder import get_src_folder
 
 CSV_NAME = "songs.csv"
 
@@ -89,7 +90,7 @@ class Player:
 		while True:
 			folder_path = self.song_folder_path
 			if folder_path is None:
-				folder_path = await ainput("Folder path: ")
+				folder_path = await get_src_folder()
 
 			try:
 				self._load_song_list(folder_path)
@@ -98,8 +99,8 @@ class Player:
 				return
 			except PresentableException as err:
 				print(str(err))
-			print("Please fix the issue and enter the folder path again")
-			print("")
+				print("Please fix the issue and enter the folder path again")
+				print("")
 
 	async def _run_player(self):
 		"""
