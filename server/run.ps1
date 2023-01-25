@@ -2,9 +2,15 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 
+$Ngrok = Get-Command ngrok -ErrorAction Ignore
+if (-not $ngrok) {
+	throw "'ngrok' must be installed before running this script (https://ngrok.com/download)."
+}
+
+
 Write-Output "Starting ngrok..."
 $job = Start-Job {
-	.\bin\ngrok.exe start -config ./ngrok.yml server | % {
+	& $using:Ngrok start -config ./ngrok.yml server | % {
 		$parsed = ConvertFrom-Json $_
 		if (3 -eq @($parsed | Get-Member @("msg", "url", "addr")).Length -and $parsed.msg -eq "started tunnel") {
 			# we found the log containing URL
