@@ -25,7 +25,6 @@ def print_player_controls():
 	print("    i <integer_number> -> change to nth song")
 	print("    q/quit -> quit the program")
 	print("    r/reload -> reload current song list")
-	print("")
 
 
 parser = CommandParser((Input.DURATION, float), [

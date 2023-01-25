@@ -39,6 +39,8 @@ class CommandParser(Generic[T]):
 
 	def parse(self, input_str: str) -> Tuple[T, Tuple[Any]]:
 		parts = input_str.split(maxsplit=1)
+		if len(parts) == 0:
+			raise ValueError()
 
 		if parts[0] in self.actions:
 			return self.actions[parts[0]].parse(parts[1:])

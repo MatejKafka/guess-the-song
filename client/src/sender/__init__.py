@@ -109,6 +109,7 @@ class Player:
 		"""
 
 		print_player_controls()
+		print("")
 
 		song_i = 0
 		while True:
